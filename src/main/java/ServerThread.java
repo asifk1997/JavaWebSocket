@@ -7,7 +7,7 @@ public class ServerThread extends Thread{
     private ServerSocket serverSocket;
     private Set<ServerThreadThread> serverThreadThreads = new HashSet<ServerThreadThread>();
     public ServerThread(String portNumb) throws IOException{
-        serverSocket = new ServerSocket(Integer.valueOf(portNumb));
+        serverSocket = new ServerSocket(Integer.parseInt(portNumb));
     }
 
     public  void run(){

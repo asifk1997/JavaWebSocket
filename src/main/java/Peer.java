@@ -1,26 +1,40 @@
 import javax.json.Json;
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.net.Socket;
 
 public class Peer {
+    private static String myAddress;
+    public static BufferedReader bufferedReader;
+    public static String[] peerList;
+    public static ServerThread serverThread;
     public static void main(String[] args) throws Exception {
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
+        peerList = new String[]{"localhost:4001", "localhost:4002"};
+        myAddress = "Alice,localhost:4001";
+//        myAddress = "Bob,localhost:4002";
+        bufferedReader = new BufferedReader(new InputStreamReader(System.in));
         System.out.println("Enter username and port for this peer");
-        String[] setupValues = bufferedReader.readLine().split(" ");
-        ServerThread serverThread = new ServerThread(setupValues[1]);
+        String[] setupValues = myAddress.split(":");
+        serverThread = new ServerThread(setupValues[1]);
         serverThread.start();
-        new Peer().updateListenToPeers(bufferedReader,setupValues[0],serverThread);
+        updatePeers();
     }
 
-    public void updateListenToPeers(BufferedReader bufferedReader,String username,ServerThread serverThread) throws Exception{
-        System.out.println("Enter space separated username:port#");
-        System.out.println("peers to recieve messages from (s to skip)");
-        String input = bufferedReader.readLine();
-        String[] inputValues = input.split(" ");
-        if (!input.equals("s")) for (int i=0;i<inputValues.length;i++){
+    public static void updatePeers() throws Exception{
+        new Peer().updateListenToPeers(bufferedReader,myAddress.split(",")[0],serverThread,peerList,myAddress.split(",")[1]);
+    }
+
+    public void updateListenToPeers(BufferedReader bufferedReader,String username,ServerThread serverThread,String[] peerList, String myAddress) throws Exception{
+//        System.out.println("Enter space separated username:port#");
+//        System.out.println("peers to recieve messages from (s to skip)");
+//        String input = bufferedReader.readLine();
+
+        String[] inputValues = peerList;
+        //if (!input.equals("s"))
+            for (int i=0;i<inputValues.length;i++){
+//                System.out.println(inputValues[i]);
+            if (inputValues[i].equals(myAddress)) continue;
             String[] address = inputValues[i].split(":");
             Socket socket = null;
             try {
@@ -31,9 +45,9 @@ public class Peer {
                 else System.out.println("invalid input. skipping to next step");
             }
         }
-        communicate(bufferedReader,username,serverThread);
+        communicate(bufferedReader,username,serverThread,peerList,myAddress);
     }
-    public void communicate(BufferedReader bufferedReader,String username,ServerThread serverThread){
+    public void communicate(BufferedReader bufferedReader,String username,ServerThread serverThread,String[] peerList,String myAddress){
         try {
             System.out.println("> you can communicate (e to exit, c to change)");
             boolean flag = true;
@@ -43,12 +57,13 @@ public class Peer {
                     flag = false;
                     break;
                 }else if (message.equals("c")){
-                    updateListenToPeers(bufferedReader,username,serverThread);
+                    updateListenToPeers(bufferedReader,username,serverThread,peerList,myAddress);
                 }else {
                     StringWriter stringWriter = new StringWriter();
                     Json.createWriter(stringWriter).writeObject(Json.createObjectBuilder()
                                                     .add("username",username)
                                                     .add("message",message)
+                                                    .add("address",myAddress)
                                                     .build());
                     serverThread.sendMessage(stringWriter.toString());
                 }
